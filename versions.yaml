@@ -63,8 +63,9 @@ build_matrix:
     python: "3.12"
     torch: "2.13.0"
     torch_vision: "0.28.0"
-    torch_audio: "2.11.0" # last torchaudio release; absent from the cu132 index -
-                          # the toolchain action installs it best-effort (no builder imports it)
+    torch_audio:
+      "2.11.0" # last torchaudio release; absent from the cu132 index -
+      # the toolchain action installs it best-effort (no builder imports it)
     # PyTorch >= 2.7 wheels default to the C++11 ABI; only flip this to
     # "FALSE" if you need to match an older/legacy torch build.
     cxx11_abi: "TRUE"
@@ -354,7 +355,7 @@ components:
 
   transformer-engine:
     path: TransformerEngine
-    ref: v2.16.1 # ahead of verl's TRANSFORMER_ENGINE_VERSION (v2.15 as of verl v0.7.1)
+    ref: v2.20.2 # ahead of verl's TRANSFORMER_ENGINE_VERSION (v2.15 as of verl v0.7.1)
     builder: transformer_engine
     wheel_packages: [transformer-engine]
     cuda_versions: ["13.2.2"]
