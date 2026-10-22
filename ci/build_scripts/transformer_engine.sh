@@ -26,7 +26,7 @@ export_extra_env
 install_nccl
 
 # Both verl Dockerfiles pre-install these before building TransformerEngine.
-pip install -q pybind11 nvidia-mathdx ninja wheel packaging
+pip install -q pybind11 nvidia-mathdx nvidia-cudnn-frontend ninja wheel packaging
 
 export NVTE_FRAMEWORK=pytorch
 
