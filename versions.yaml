@@ -27,7 +27,7 @@
 # script imports it.
 #
 # Every component in `components` below is built once per entry in this
-# list, minus the entries its `arches` / `python_versions` filters exclude.
+# list, minus entries excluded by its arch / Python / CUDA / torch filters.
 # Add another entry to build additional arch/CUDA/Python/Torch combinations.
 #
 # 3.12 is the version verl's own Dockerfiles pin; 3.11 is built in addition
@@ -130,13 +130,13 @@ build_matrix:
     torch_audio: "2.11.0"
     cxx11_abi: "TRUE"
 
-  # ---- CUDA 13.0 retained for flashinfer only. Its builder rehosts the
+  # ---- CUDA 13.0 + torch 2.13 retained for flashinfer. Its builder rehosts the
   # prebuilt flashinfer-jit-cache / -cubin data wheels from flashinfer.ai,
   # which publishes no cu132 index yet (only .../whl/cu130). verl does not
   # consume this component from the wheelhouse (vllm/sglang pin flashinfer from
   # PyPI), so it stays on 13.0 until upstream ships cu132. Components choose
   # their CUDA row(s) via `cuda_versions` below (several are allowed - each is
-  # a separate cuda-keyed release); drop these rows once flashinfer moves.
+  # a separate cuda-keyed release); drop these torch 2.13 rows once flashinfer moves.
   - arch: x86_64
     cuda: "13.0.2"
     python: "3.11"
@@ -166,6 +166,40 @@ build_matrix:
     python: "3.12"
     torch: "2.13.0"
     torch_vision: "0.28.0"
+    torch_audio: "2.11.0"
+    cxx11_abi: "TRUE"
+
+  # ---- DeepGEMM: the torch 2.11 + cu130 environment used for Hopper and
+  # Blackwell validation. Component filters keep existing build plans intact.
+  - arch: x86_64
+    cuda: "13.0.2"
+    python: "3.11"
+    torch: "2.11.0"
+    torch_vision: "0.26.0"
+    torch_audio: "2.11.0"
+    cxx11_abi: "TRUE"
+
+  - arch: x86_64
+    cuda: "13.0.2"
+    python: "3.12"
+    torch: "2.11.0"
+    torch_vision: "0.26.0"
+    torch_audio: "2.11.0"
+    cxx11_abi: "TRUE"
+
+  - arch: aarch64
+    cuda: "13.0.2"
+    python: "3.11"
+    torch: "2.11.0"
+    torch_vision: "0.26.0"
+    torch_audio: "2.11.0"
+    cxx11_abi: "TRUE"
+
+  - arch: aarch64
+    cuda: "13.0.2"
+    python: "3.12"
+    torch: "2.11.0"
+    torch_vision: "0.26.0"
     torch_audio: "2.11.0"
     cxx11_abi: "TRUE"
 
@@ -266,6 +300,10 @@ verl_reference_versions:
 #                  every supported interpreter, and megatron-bridge's
 #                  requires-python is ">=3.12,<3.13" upstream anyway. A second
 #                  build would only race the same asset name onto the release.
+# torch_versions:  optional subset of build_matrix torch versions, intersected
+#                  with arch / Python / CUDA filters. Omit to build every torch.
+#                  Allows a component to keep a validated ABI without expanding
+#                  other components when older torch rows are added.
 # cuda_versions:   which build_matrix `cuda` values to build this component
 #                  for. Omit it to build for every cuda in build_matrix; list a
 #                  subset to opt out of the rest. Used today because the matrix
@@ -397,6 +435,7 @@ components:
     # yet). verl does not consume this component (vllm/sglang pin flashinfer
     # from PyPI); move it to 13.2 once upstream ships cu132.
     cuda_versions: ["13.0.2"]
+    torch_versions: ["2.13.0"] # do not duplicate rehosted wheels for DeepGEMM
     torch_cuda_arch_list: "8.0 9.0a 10.0a 12.0f"
     # This row rehosts prebuilt wheels (see the arch note below) - nothing is
     # compiled here, and flashinfer-cubin is a ~1.2 GB data wheel far over the
@@ -584,6 +623,24 @@ components:
     # No `arches` filter: verl's megatron extra is spelled once for both arches,
     # so an aarch64 wheel has to exist or `uv sync --extra megatron` finds
     # nothing there. The gencode list is fixed either way (see above).
+    arch_overrides:
+      aarch64:
+        runs_on: ubuntu-24.04-arm
+    extra_env: {}
+
+  deep-gemm:
+    path: DeepGEMM
+    ref: 5081f8513af57e61696de4f4f04b0e707ffb503e # 2.8.2; retain +5081f85 in wheel metadata
+    builder: deep_gemm
+    wheel_packages: [deep-gemm]
+    cuda_versions: ["13.0.2"]
+    torch_versions: ["2.11.0"]
+    # Only the host extension is built ahead of time. GPU kernels use
+    # DeepJIT at runtime, so no fatbin architecture list can be asserted.
+    torch_cuda_arch_list: null
+    requires_cudnn: false
+    max_jobs: 2
+    runs_on: ubuntu-24.04
     arch_overrides:
       aarch64:
         runs_on: ubuntu-24.04-arm

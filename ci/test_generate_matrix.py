@@ -1028,6 +1028,63 @@ class CudaVersionFilterTests(unittest.TestCase):
         self.assertTrue(meta["tag"].endswith("-cu132"))
 
 
+class TorchVersionFilterTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.versions = make_cuda_matrix_versions({
+            "ref": "v1.2.3",
+            "path": "demo",
+            "builder": "demo",
+            "wheel_packages": ["demo"],
+            "runs_on": "ubuntu-24.04",
+        })
+        self.versions["build_matrix"] += [
+            dict(combo, torch="2.13.0")
+            for combo in self.versions["build_matrix"]
+        ]
+
+    def test_unset_filter_preserves_all_torch_versions(self) -> None:
+        self.assertEqual(
+            self.versions["build_matrix"],
+            generate_matrix.component_combos(self.versions, "demo"),
+        )
+
+    def test_torch_filter_applies_to_builds_and_release_keys(self) -> None:
+        self.versions["components"]["demo"]["torch_versions"] = [DEMO_TORCH]
+        rows = generate_matrix.build_matrix_entries(self.versions, "demo")
+        self.assertTrue(rows)
+        self.assertEqual({DEMO_TORCH}, {row["torch"] for row in rows})
+        self.assertEqual(
+            {DEMO_TORCH},
+            {torch for _, torch, _ in generate_matrix.component_release_keys(self.versions, "demo")},
+        )
+        # Index coverage must not require wheels for the opted-out ABI.
+        gaps = build_index.coverage_gaps(self.versions, {})
+        self.assertTrue(gaps)
+        self.assertEqual({"torch2.11"}, {gap["world"].split("/")[1] for gap in gaps})
+
+    def test_torch_filter_intersects_other_filters(self) -> None:
+        self.versions["components"]["demo"].update(
+            torch_versions=["2.13.0"], cuda_versions=[DEMO_CUDA],
+            python_versions=["3.12"], arches=["aarch64"],
+        )
+        combos = generate_matrix.component_combos(self.versions, "demo")
+        self.assertEqual(1, len(combos))
+        self.assertEqual(
+            ("aarch64", "3.12", DEMO_CUDA, "2.13.0"),
+            tuple(combos[0][key] for key in ("arch", "python", "cuda", "torch")),
+        )
+
+    def test_unknown_torch_version_is_rejected(self) -> None:
+        self.versions["components"]["demo"]["torch_versions"] = ["9.9.9"]
+        with self.assertRaisesRegex(SystemExit, "torch version.*not in build_matrix.*9.9.9"):
+            generate_matrix.component_combos(self.versions, "demo")
+
+    def test_empty_filter_disables_component(self) -> None:
+        self.versions["components"]["demo"]["torch_versions"] = []
+        self.assertEqual([], generate_matrix.component_combos(self.versions, "demo"))
+        self.assertEqual([], generate_matrix.component_release_keys(self.versions, "demo"))
+
+
 class PerPythonReleaseTests(unittest.TestCase):
     """One GitHub Release per (component, Python version, torch version):
     each interpreter's rows get their own tag, title and manifest, and a
