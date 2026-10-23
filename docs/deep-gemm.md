@@ -7,11 +7,21 @@ The git revision is retained in both the filename and package metadata.
 
 ## Build and runtime compatibility
 
-The initial matrix is CUDA 13.0.2, torch 2.11.0, CXX11 ABI enabled, Python
-3.11/3.12, and native x86_64/aarch64. `torch_versions` and `cuda_versions`
-keep this component on that stack independently of the default index's
-newer torch/CUDA versions. Each interpreter has a separate release; CPU
-architecture is encoded in the wheel filename.
+DeepGEMM follows every global `build_matrix` row without component-level
+`torch_versions` or `cuda_versions` filters. The current combinations are:
+
+| PyTorch | CUDA toolkit | Installation index world |
+|---|---|---|
+| 2.13.0 | 13.2.2 | `cu132/torch2.13` |
+| 2.12.1 | 13.2.2 | `cu132/torch2.12` |
+| 2.13.0 | 13.0.2 | `cu130/torch2.13` |
+| 2.11.0 | 13.0.2 | `cu130/torch2.11` |
+
+Every combination builds for Python 3.11/3.12 and native x86_64/aarch64,
+with CXX11 ABI enabled: 16 wheels across 8 releases. Releases are separate
+for each (Python, torch, CUDA) tuple; CPU architecture is encoded in the
+wheel filename. The torch 2.11 + cu130 training environment remains in the
+matrix, and future global matrix changes automatically apply to DeepGEMM.
 
 The builder uses Ubuntu 24.04, GCC 13 and `libdw-dev`. It produces native
 `linux_x86_64` / `linux_aarch64` wheels, **not audited manylinux wheels**.
@@ -35,8 +45,9 @@ does not bake GPU cubins into a fatbin at wheel-build time.
 
 ## Installation after publication
 
-First provision torch 2.11.0+cu130 and the matching runtime toolchain, then
-install from the explicit ABI-specific index:
+Provision one of the supported torch/CUDA stacks and its matching runtime
+toolchain, then select the corresponding explicit index world from the
+table above. For example, the retained torch 2.11.0+cu130 environment uses:
 
 ```bash
 pip install --no-deps 'deep-gemm==2.8.2+5081f85' \
@@ -44,9 +55,11 @@ pip install --no-deps 'deep-gemm==2.8.2+5081f85' \
 ```
 
 This command becomes available after the component's builds and index
-publication succeed. The default `/simple/` index points at a different
-torch/CUDA stack. `--no-deps` assumes runtime dependencies are already
-installed; it does not make an incompatible environment compatible.
+publication succeed. The default `/simple/` index follows the configured
+default world, currently `cu132/torch2.13`; use an explicit world URL to
+avoid changing ABI stacks implicitly. `--no-deps` assumes runtime
+dependencies are already installed; it does not make an incompatible
+environment compatible.
 
 ## Validation and release
 

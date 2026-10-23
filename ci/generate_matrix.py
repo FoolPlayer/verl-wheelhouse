@@ -353,11 +353,9 @@ def component_cuda_for(
 ) -> str:
     """The single CUDA version for one component's (Python, torch) release.
 
-    Each active component pins one CUDA per (Python, torch) via
-    `cuda_versions`, so the ambient-python release_meta path (which is passed
-    --torch but not --cuda) resolves unambiguously. Fails closed if a future
-    matrix ever puts two CUDAs on one (Python, torch) without the caller
-    naming one.
+    Used when release_meta is called without --cuda. Fails closed when a
+    component builds the selected (Python, torch) against multiple CUDAs;
+    the build workflow always passes its row's CUDA version explicitly.
     """
     python, torch = str(python), str(torch)
     cudas = list(

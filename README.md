@@ -105,8 +105,10 @@ change for routine version bumps:
   torch is kept ahead of their `2.11.0` pin; 3.11 is added because torch
   publishes cp311 cu132 wheels for both arches and downstream envs still run
   it), on `x86_64` and `aarch64`. The matrix also still carries CUDA
-  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels, and
-  torch 2.11 for the initial `deep-gemm` builds. Add another entry to build
+  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels and
+  DeepGEMM, plus torch 2.11 for the retained DeepGEMM training stack.
+  DeepGEMM builds every global matrix row, including the current cu132
+  stacks. Add another entry to build
   more combinations - every component is built once per entry here, minus
   the ones its `arches` / `python_versions` / `cuda_versions` /
   `torch_versions` filters exclude. Releases are keyed by component,
@@ -185,9 +187,9 @@ republished from retained build artifacts with `restore_release_wheels.py`
 The build workflow creates the release inline while uploading: `_build.yml`
 runs `ci/release_meta.py` under the matrix row's own setup-python
 interpreter, so the interpreter needs no workflow input (no `--python` is
-passed); torch has no such ambient source and is passed as `--torch`, and
-CUDA is inferred from the single cuda that (Python, torch) builds against
-(`--cuda` names it only if a matrix ever carries two). Rebuilding the same
+passed); torch and CUDA are passed explicitly as `--torch` and `--cuda`.
+This also handles components such as DeepGEMM that build the same torch
+against multiple CUDA versions. Rebuilding the same
 tuple re-uploads (`--clobber`) wheels onto that same release; bumping a
 component's `ref` - or the matrix's torch/CUDA - starts **brand-new**
 releases under new tags, leaving the previous releases (and their wheels)

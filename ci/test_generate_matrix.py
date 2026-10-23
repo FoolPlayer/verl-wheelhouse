@@ -4,11 +4,14 @@ import contextlib
 import io
 import json
 import re
+import shlex
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+import yaml
 
 import build_index
 import generate_matrix
@@ -1083,6 +1086,54 @@ class TorchVersionFilterTests(unittest.TestCase):
         self.versions["components"]["demo"]["torch_versions"] = []
         self.assertEqual([], generate_matrix.component_combos(self.versions, "demo"))
         self.assertEqual([], generate_matrix.component_release_keys(self.versions, "demo"))
+
+
+class DeepGemmReleaseWorkflowTests(unittest.TestCase):
+    def test_workflow_metadata_matches_every_global_matrix_row(self) -> None:
+        versions = generate_matrix.load_versions()
+        self.assertEqual(
+            versions["build_matrix"],
+            generate_matrix.component_combos(versions, "deep-gemm"),
+        )
+        workflow_path = (
+            Path(__file__).resolve().parents[1] / ".github/workflows/_build.yml"
+        )
+        workflow = yaml.load(workflow_path.read_text(), Loader=yaml.BaseLoader)
+        release_step = next(
+            step
+            for job in workflow["jobs"].values()
+            for step in job.get("steps", [])
+            if "python3 ci/release_meta.py" in step.get("run", "")
+        )
+        # Exercise the command actually used to publish. Matrix-only tests
+        # miss an omitted --cuda when one torch has two CUDA builds.
+        command = re.search(
+            r"python3 (ci/release_meta\.py.*?) > release-meta\.json",
+            release_step["run"], re.DOTALL,
+        ).group(1).replace("\\\n", " ")
+        for row in generate_matrix.build_matrix_entries(versions, "deep-gemm"):
+            with self.subTest(
+                arch=row["arch"], python=row["python"],
+                torch=row["torch"], cuda=row["cuda"],
+            ):
+                inputs = {
+                    "component": row["component"],
+                    "torch-version": row["torch"],
+                    "cuda-version": row["cuda"],
+                }
+                resolved = re.sub(
+                    r"\$\{\{ inputs\.([\w-]+) \}\}",
+                    lambda match: inputs[match.group(1)], command,
+                )
+                output = io.StringIO()
+                with patch.object(sys, "argv", shlex.split(resolved)), patch(
+                    "release_meta.runtime_python", return_value=row["python"]
+                ), contextlib.redirect_stdout(output):
+                    release_meta.main()
+                (meta,) = json.loads(output.getvalue())
+                self.assertEqual(row["release_tag"], meta["tag"])
+                self.assertEqual(row["cuda"], meta["cuda"])
+                self.assertEqual(row["torch"], meta["torch"])
 
 
 class PerPythonReleaseTests(unittest.TestCase):

@@ -335,9 +335,10 @@ two releases).
 otherwise-matching torch row. Unknown versions are rejected, and an empty
 list disables the component's builds.
 
-For example, DeepGEMM starts on `torch_versions: ["2.11.0"]` and
-`cuda_versions: ["13.0.2"]`. Flashinfer keeps `torch_versions: ["2.13.0"]`
-so adding DeepGEMM's older cu130 rows does not duplicate its existing builds.
+For example, Flashinfer keeps `torch_versions: ["2.13.0"]` and
+`cuda_versions: ["13.0.2"]` so retaining DeepGEMM's torch 2.11 + cu130 rows
+does not duplicate its existing builds. DeepGEMM leaves both filters unset
+to follow the full global matrix, including the retained training stack.
 The same filtered rows drive release metadata and index coverage checks.
 When adding an older stack, compare the other components' matrices and
 build manifests before/after; do not move `index.default_world` unless the
