@@ -1088,13 +1088,9 @@ class TorchVersionFilterTests(unittest.TestCase):
         self.assertEqual([], generate_matrix.component_release_keys(self.versions, "demo"))
 
 
-class DeepGemmReleaseWorkflowTests(unittest.TestCase):
-    def test_workflow_metadata_matches_every_global_matrix_row(self) -> None:
+class ReleaseWorkflowTests(unittest.TestCase):
+    def test_workflow_metadata_matches_every_component_row(self) -> None:
         versions = generate_matrix.load_versions()
-        self.assertEqual(
-            versions["build_matrix"],
-            generate_matrix.component_combos(versions, "deep-gemm"),
-        )
         workflow_path = (
             Path(__file__).resolve().parents[1] / ".github/workflows/_build.yml"
         )
@@ -1111,8 +1107,12 @@ class DeepGemmReleaseWorkflowTests(unittest.TestCase):
             r"python3 (ci/release_meta\.py.*?) > release-meta\.json",
             release_step["run"], re.DOTALL,
         ).group(1).replace("\\\n", " ")
-        for row in generate_matrix.build_matrix_entries(versions, "deep-gemm"):
+        rows = generate_matrix.build_full_matrix(
+            versions, generate_matrix.component_names(versions)
+        )
+        for row in rows:
             with self.subTest(
+                component=row["component"],
                 arch=row["arch"], python=row["python"],
                 torch=row["torch"], cuda=row["cuda"],
             ):

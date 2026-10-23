@@ -135,8 +135,7 @@ build_matrix:
   # transformer-engine also builds here so cu130/torch2.13 consumers can install
   # the pinned TE ref without moving to cu132. Components choose their CUDA
   # row(s) via `cuda_versions` below (several are allowed - each is a separate
-  # cuda-keyed release). DeepGEMM follows the full global matrix, including
-  # this torch 2.13 + cu130 stack.
+  # cuda-keyed release).
   - arch: x86_64
     cuda: "13.0.2"
     python: "3.11"
@@ -637,8 +636,9 @@ components:
     ref: 5081f8513af57e61696de4f4f04b0e707ffb503e # 2.8.2; retain +5081f85 in wheel metadata
     builder: deep_gemm
     wheel_packages: [deep-gemm]
-    # Follow every global torch/CUDA combination, including the retained
-    # torch 2.11 + cu130 rows. Each ABI world gets its own release/index.
+    # Build only VeOmni's current GPU stack; expand after downstream validation.
+    cuda_versions: ["13.0.2"]
+    torch_versions: ["2.11.0"]
     # Only the host extension is built ahead of time. GPU kernels use
     # DeepJIT at runtime, so no fatbin architecture list can be asserted.
     torch_cuda_arch_list: null

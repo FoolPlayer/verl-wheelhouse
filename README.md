@@ -105,12 +105,11 @@ change for routine version bumps:
   torch is kept ahead of their `2.11.0` pin; 3.11 is added because torch
   publishes cp311 cu132 wheels for both arches and downstream envs still run
   it), on `x86_64` and `aarch64`. The matrix also still carries CUDA
-  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels,
-  TransformerEngine and DeepGEMM, plus torch 2.11 for the retained
-  DeepGEMM training stack.
-  DeepGEMM builds every global matrix row, including the current cu132
-  stacks. Add another entry to build
-  more combinations - every component is built once per entry here, minus
+  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels and
+  TransformerEngine, plus torch 2.11 for DeepGEMM's initial VeOmni
+  training stack. DeepGEMM is limited to torch 2.11 + cu130 on Python
+  3.11/3.12 and x86_64/aarch64. Add another entry to build more combinations.
+  Every component is built once per entry here, minus
   the ones its `arches` / `python_versions` / `cuda_versions` /
   `torch_versions` filters exclude. Releases are keyed by component,
   Python, torch and CUDA, so different ABI worlds do not overwrite one another.
@@ -189,7 +188,7 @@ The build workflow creates the release inline while uploading: `_build.yml`
 runs `ci/release_meta.py` under the matrix row's own setup-python
 interpreter, so the interpreter needs no workflow input (no `--python` is
 passed); torch and CUDA are passed explicitly as `--torch` and `--cuda`.
-This also handles components such as DeepGEMM that build the same torch
+This also handles components such as TransformerEngine that build the same torch
 against multiple CUDA versions. Rebuilding the same
 tuple re-uploads (`--clobber`) wheels onto that same release; bumping a
 component's `ref` - or the matrix's torch/CUDA - starts **brand-new**
