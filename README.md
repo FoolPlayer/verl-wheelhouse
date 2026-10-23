@@ -105,8 +105,9 @@ change for routine version bumps:
   torch is kept ahead of their `2.11.0` pin; 3.11 is added because torch
   publishes cp311 cu132 wheels for both arches and downstream envs still run
   it), on `x86_64` and `aarch64`. The matrix also still carries CUDA
-  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels and
-  DeepGEMM, plus torch 2.11 for the retained DeepGEMM training stack.
+  `13.0.2` rows: torch 2.13 for `flashinfer`'s prebuilt data wheels,
+  TransformerEngine and DeepGEMM, plus torch 2.11 for the retained
+  DeepGEMM training stack.
   DeepGEMM builds every global matrix row, including the current cu132
   stacks. Add another entry to build
   more combinations - every component is built once per entry here, minus

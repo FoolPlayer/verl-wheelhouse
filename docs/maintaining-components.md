@@ -337,8 +337,10 @@ list disables the component's builds.
 
 For example, Flashinfer keeps `torch_versions: ["2.13.0"]` and
 `cuda_versions: ["13.0.2"]` so retaining DeepGEMM's torch 2.11 + cu130 rows
-does not duplicate its existing builds. DeepGEMM leaves both filters unset
-to follow the full global matrix, including the retained training stack.
+does not duplicate its existing builds. TransformerEngine similarly keeps
+`torch_versions: ["2.12.1", "2.13.0"]` while building its cu130/cu132 stacks
+on Python 3.12. DeepGEMM leaves both filters unset to follow the full global
+matrix, including the retained training stack.
 The same filtered rows drive release metadata and index coverage checks.
 When adding an older stack, compare the other components' matrices and
 build manifests before/after; do not move `index.default_world` unless the
