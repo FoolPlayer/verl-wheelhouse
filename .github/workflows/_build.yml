@@ -408,9 +408,8 @@ jobs:
         run: |
           pip install pyyaml
           # --python is left implicit: this step runs under the matrix row's
-          # own setup-python, which release_meta self-selects. Pass torch and
-          # CUDA explicitly: a component can build one torch against multiple
-          # CUDA versions, so neither version can be inferred unambiguously.
+          # own setup-python, which release_meta self-selects. Torch and CUDA
+          # have no ambient source, so the row's pins are passed explicitly.
           python3 ci/release_meta.py --component "${{ inputs.component }}" \
             --torch "${{ inputs.torch-version }}" \
             --cuda "${{ inputs.cuda-version }}" > release-meta.json
